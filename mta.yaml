@@ -45,7 +45,7 @@ modules:
       disk-quota: 1024M
     properties:
       ApplicationInterfaceKey: saptest0
-      APIKeyHubSandbox: Ejq7jB2i2ymKyx83OGOdZmVxQQpsV2kl
+      APIKeyHubSandbox: Ejq7jB2i2ymKyifyOGOdZmVxHHpsV2kl
     requires:
       - name: SFBTPExtention-uaa
       - name: SFBTPExtention-dest
