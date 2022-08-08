@@ -1,0 +1,8 @@
+{
+    "emname": "SFBTPExtention-em",
+    "options": {
+        "management": true,
+        "messagingrest": true,
+        "messaging": true
+    }
+}

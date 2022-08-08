@@ -1,0 +1,28 @@
+{
+    "welcomeFile": "index.html",
+    "authenticationMethod": "route",
+    "routes": [
+        {
+            "source": "^/catalog/(.*)$",
+            "csrfProtection": false,
+            "authenticationType": "xsuaa",
+            "scope": "$XSAPPNAME.Viewer",
+            "destination": "SFBTPExtention-srv"
+        }
+        ,
+        {
+            "source": "^/v2/catalog/(.*)$",
+            "csrfProtection": false,
+            "authenticationType": "xsuaa",
+            "scope": "$XSAPPNAME.Viewer",
+            "destination": "SFBTPExtention-srv"
+        }
+        ,
+        {
+            "source": "^/(.*)$",
+            "authenticationType": "xsuaa",
+            "scope": "$XSAPPNAME.Viewer",
+            "service": "html5-apps-repo-rt"
+        }
+    ]
+}

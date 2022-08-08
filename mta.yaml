@@ -1,0 +1,225 @@
+_schema-version: '3.2'
+ID: SFBTPExtention
+version: 0.0.1
+
+parameters:
+  enable-parallel-deployments: true
+  deploy_mode: html5-repo
+
+build-parameters:
+  before-all:
+    - builder: custom
+      commands:
+        - npm ci
+        - npx -p @sap/cds-dk cds build --production
+#        - npx rimraf gen/db/src/gen/data # uncomment this line to prevent loading of initial data which is only relevant for dev/test deployments 
+#        - npx rimraf gen/db/src/gen/csv  # uncomment this line unless db/csv folder has been used for config/control table data which is entirely managed by the developer and never changed by the app
+
+modules:
+  # ---------------- DATABASE DEPLOYER MODULE ------------------
+  - name: SFBTPExtention-db-deployer
+  # ------------------------------------------------------------
+    type: hdb
+    path: gen/db
+    parameters:
+      buildpack: nodejs_buildpack
+      memory: 256M
+      disk-quota: 1024M
+    requires:
+      - name: SFBTPExtention-uaa
+      - name: SFBTPExtention-db
+
+  # --------------------- SERVER MODULE ------------------------
+  - name: SFBTPExtention-srv
+  # ------------------------------------------------------------
+    type: nodejs
+    path: gen/srv
+    build-parameters:
+      ignore:
+        - default-*.json
+        - .env
+        - "*node_modules*"
+    parameters:
+      buildpack: nodejs_buildpack
+      memory: 512M
+      disk-quota: 1024M
+    properties:
+      ApplicationInterfaceKey: saptest0
+      APIKeyHubSandbox: Ejq7jB2i2ymKyx83OGOdZmVxQQpsV2kl
+    requires:
+      - name: SFBTPExtention-uaa
+      - name: SFBTPExtention-dest
+      - name: SFBTPExtention-em
+      - name: SFBTPExtention-db
+    provides:
+      - name: srv-api
+        properties:
+          srv-url: ${default-url}
+
+
+
+
+
+  # ----------- HTML5 APP REPOSITORY APP HTML5 MODULE ----------
+  - name: SFBTPExtention-html5
+  # ------------------------------------------------------------
+    type: html5
+    path: app/html5
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm install
+        - npm run build:cf
+      supported-platforms: []
+
+  # ----------- HTML5 APP REPOSITORY APP FIORI MODULE ----------
+  - name: SFBTPExtention-fiori
+  # ------------------------------------------------------------
+    type: html5
+    path: app/fiori
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm install
+        - npm run build:cf
+      supported-platforms: []
+
+  # ----------- HTML5 APP REPOSITORY DEPLOYER MODULE -----------
+  - name: SFBTPExtention-ui-deployer
+  # ------------------------------------------------------------
+    type: com.sap.application.content
+    path: .
+    requires:
+      - name: SFBTPExtention-html5repo
+        parameters:
+          content-target: true
+    build-parameters:
+      build-result: gen/app
+      requires:
+        - artifacts:
+            - html5-content.zip
+          name: SFBTPExtention-html5
+          target-path: gen/app
+        - artifacts:
+            - fiori-content.zip
+          name: SFBTPExtention-fiori
+          target-path: gen/app
+
+  # ----- HTML5 APP REPOSITORY DESTINATION CONTENT MODULE ------
+  - name: SFBTPExtention-dest-content
+  # ------------------------------------------------------------
+    type: com.sap.application.content
+    requires:
+      - name: SFBTPExtention-uaa
+        parameters:
+          service-key:
+            name: SFBTPExtention-uaa-sk
+      - name: SFBTPExtention-dest
+        parameters:
+          content-target: true
+      - name: SFBTPExtention-html5repo
+        parameters:
+          service-key:
+            name: SFBTPExtention-html5repo-sk
+      - name: srv-api
+    parameters:
+      content:
+        instance:
+          existing_destinations_policy: ignore
+          destinations:
+            - Name: SFBTPExtention-service-SFBTPExtention-uaa
+              ServiceInstanceName: SFBTPExtention-uaa
+              ServiceKeyName: SFBTPExtention-uaa-sk
+              Authentication: OAuth2UserTokenExchange
+              sap.cloud.service: SFBTPExtention-service
+            - Name: SFBTPExtention-service-SFBTPExtention-html5repo
+              ServiceInstanceName: SFBTPExtention-html5repo
+              ServiceKeyName: SFBTPExtention-html5repo-sk
+              sap.cloud.service: SFBTPExtention-service
+            - Name: SFBTPExtention-srv
+              Description: Successfactor Extension - Server Module
+              URL: ~{srv-api/srv-url}
+              TokenServiceInstanceName: SFBTPExtention-uaa
+              TokenServiceKeyName: SFBTPExtention-uaa-sk
+              Authentication: OAuth2UserTokenExchange
+              sap.cloud.service: SFBTPExtention-service
+    build-parameters:
+      no-source: true
+
+resources:
+  # ----------------------- UAA SERVICE ------------------------
+  - name: SFBTPExtention-uaa
+  # ------------------------------------------------------------
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: xsuaa
+      service-plan: application
+      path: ./xs-security.json
+
+  # -------------------- DESTINATION SERVICE -------------------
+  - name: SFBTPExtention-dest
+  # ------------------------------------------------------------
+    type: org.cloudfoundry.managed-service
+    requires:
+      - name: srv-api
+    parameters:
+      service: destination
+      service-plan: lite
+      config:
+        HTML5Runtime_enabled: true
+        init_data:
+          instance:
+            existing_destinations_policy: ignore
+            destinations:
+              - Name: ui5
+                Description: SAPUI5
+                URL: https://ui5.sap.com
+                Type: HTTP
+                ProxyType: Internet
+                Authentication: NoAuthentication
+
+  # ----------- HTML5 APP REPOSITORY HOSTING SERVICE -----------
+  - name: SFBTPExtention-html5repo
+  # ------------------------------------------------------------
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan: app-host
+
+
+  # ----------------- SUCCESSFACTORS API SERVICE ---------------
+  - name: SFBTPExtention
+  # ------------------------------------------------------------
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: sap-successfactors-extensibility
+      service-plan: api-access
+      config:
+        systemName: Successfactor
+
+
+  # --------------------- EVENT MESH SERVICE -------------------
+  - name: SFBTPExtention-em
+  # ------------------------------------------------------------
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: enterprise-messaging
+      service-plan: dev
+      path: ./em.json
+
+  # ------------------- HDI CONTAINER SERVICE ------------------
+  - name: SFBTPExtention-db
+  # ------------------------------------------------------------
+    type: com.sap.xs.hdi-container
+    parameters:
+      service: hana
+      service-plan: hdi-shared
+    properties:
+      hdi-service-name: ${service-name}
+
+
+
+
+

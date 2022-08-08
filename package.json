@@ -1,0 +1,105 @@
+{
+    "name": "SFBTPExtention",
+    "version": "0.0.1",
+    "repository": "<Add your repository here>",
+    "license": "UNLICENSED",
+    "description": "Extension Application",
+    "engines": {
+        "node": "14.x"
+    },
+    "dependencies": {
+        "@sap/cds": "^5",
+        "@sap/audit-logging": "^5",
+        "hdb": "^0.19",
+        "@sap/cds-odata-v2-adapter-proxy": "^1.8.21",
+        "@sap/xb-msg-amqp-v100": "^0.9.51",
+        "@sap/xsenv": "^3",
+        "@sap/xssec": "^3",
+        "passport": "^0.4.1",
+        "debug": "^4.3",
+        "express": "^4"
+    },
+    "devDependencies": {
+        "sqlite3": "^5.0.2",
+        "@sap/ux-specification": "^1.96.4",
+        "@sap/cds-odata-v2-adapter-proxy": "^1"
+    },
+    "sapux": [
+        "app/fiori"
+    ],
+    "scripts": {
+        "start": "cds run"
+    },
+    "cds": {
+        "requires": {
+            "uaa": {
+                "kind": "xsuaa"
+            },
+            "auth": {
+                "[production]": {
+                    "strategy": "JWT"
+                },
+                "[development]": {
+                    "strategy": "mock",
+                    "users": {
+                        "joe": {
+                            "roles": [
+                                "Admin",
+                                "Viewer"
+                            ]
+                        },
+                        "julie": {
+                            "roles": [
+                                "Viewer"
+                            ]
+                        },
+                        "bob": {
+                            "roles": [
+                                "Viewer"
+                            ]
+                        }
+                    }
+                }
+            },
+            "db": {
+                "[production]": {
+                    "kind": "hana"
+                },
+                "[development]": {
+                    "kind": "sql"
+                },
+                "model": [
+                    "db",
+                    "srv"
+                ]
+            },
+            "RCMCandidate": {
+                "kind": "odata-v2",
+                "model": "srv/external/RCMCandidate",
+                "credentials": {
+                    "[production]": {
+                        "destination": "SFBTPExtention",
+                        "path": "odata/v2"
+                    },
+                    "[development]": {
+                        "url": "https://sandbox.api.sap.com/successfactors/odata/v2"
+                    }
+                }
+            },
+            "messaging": {
+                "[production]": {
+                    "kind": "enterprise-messaging-shared",
+                    "queue": {
+                        "name": "extention/btp/successfacor/SFBTPExtention/queue/default"
+                    }
+                },
+                "[development]": {
+                    "kind": "local-messaging"
+                }
+            }
+        },
+        "hana": {
+            "deploy-format": "hdbtable"
+        }
+    }
+}

@@ -1,0 +1,54 @@
+GET http://localhost:4004/catalog/
+Authorization: Basic joe:
+###
+GET http://localhost:4004/catalog/$metadata
+Authorization: Basic joe:
+###
+GET http://localhost:4004/catalog/Sales
+Authorization: Basic joe:
+###
+POST http://localhost:4004/catalog/Sales(1)/CatalogService.boost
+Authorization: Basic joe:
+Content-Type: application/json
+
+{}
+###
+GET http://localhost:4004/catalog/Sales?$apply=filter(amount%20gt%20500)/groupby((region),aggregate($count%20as%20nrCountries))
+Authorization: Basic joe:
+###
+GET http://localhost:4004/catalog/Candidates?$top=10&$filter=country%20eq%20%27US%27%20and%20zip%20gt%20%2700000%27
+Authorization: Basic joe:
+###
+GET http://localhost:4004/catalog/CandidatesLog
+Authorization: Basic joe:
+###
+GET http://localhost:4004/catalog/userInfo()
+Authorization: Basic joe:
+###
+GET http://localhost:4004/v2/catalog
+Authorization: Basic joe:
+###
+GET http://localhost:4004/v2/catalog/$metadata
+Authorization: Basic joe:
+###
+GET http://localhost:4004/v2/catalog/Sales
+Authorization: Basic joe:
+###
+POST http://localhost:4004/v2/catalog/Sales_boost?ID=1
+Authorization: Basic joe:
+Content-Type: application/json
+
+{}
+###
+GET http://localhost:4004/v2/catalog/Sales?$apply=filter(amount%20gt%20500)/groupby((region),aggregate($count%20as%20nrCountries))
+Authorization: Basic joe:
+###
+GET http://localhost:4004/v2/catalog/Candidates?$top=10&$filter=country%20eq%20%27US%27%20and%20zip%20gt%20%2700000%27
+Authorization: Basic joe:
+###
+GET http://localhost:4004/v2/catalog/CandidatesLog
+Authorization: Basic joe:
+###
+GET http://localhost:4004/v2/catalog/userInfo()
+Authorization: Basic joe:
+###
